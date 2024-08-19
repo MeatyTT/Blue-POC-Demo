@@ -119,7 +119,7 @@ def find_parallels_helper(lines, img, length, start_index, end_index):
 def find_parallels(lines, img, length):
     num_processes = 10  # Sử dụng số lượng CPU
     chunk_size = len(lines) // num_processes
-    print(len(lines))
+    print('LLLLLLLLLEEEEEEEEEEEENNNNNNNN',len(lines))
     
 #Code chạy đa luồng với 4 luồng ở đây ạ
     
@@ -141,11 +141,27 @@ def warped_images(img):
     lsd = cv2.createLineSegmentDetector(3,2,2,3)
 
     lines= lsd.detect(gray)[0]
+    line_lengths=[]
+    for line in lines:
+        x1,y1,x2,y2 = line[0]
+        line_length = np.sqrt((x2 - x1)**2 + (y1 - y2)**2)
+        line_lengths.append(line_length)
+    combined = list(zip(line_lengths, lines))
 
+    # Sắp xếp danh sách combined theo y giảm dần
+    combined_sorted = sorted(combined, key=lambda pair: pair[0], reverse=True)
+
+    # Tách phần x đã sắp xếp từ combined_sorted
+    lines_sorted = [pair[1] for pair in combined_sorted]
+    line_tests=[]
+    for i in range(int(len(lines_sorted)*0.2)):
+        line_tests.append(lines_sorted[i])
+    # print(line_lengths)
+    # print(lines_sorted)
     img_height,img_width,_ = img.shape
     length = 25
     # results = find_parallels(lines,img,length)
-    parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
+    parallel_lines_ox,parallel_lines_oy = find_parallels(line_tests,img,length)
     # print('ox',len(parallel_lines_ox))
     # print('oy',len(parallel_lines_oy))
     # return parallel_lines_ox,parallel_lines_oy
@@ -250,10 +266,10 @@ def warped_images(img):
     else:
         x3,y3 = sorted_values[0][0],sorted_values[0][1]
         x4,y4 = sorted_values[1][0],sorted_values[1][1]
-    # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
-    # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
-    # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
-    # cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
+    cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
+    cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
+    cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
+    cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
     test = np.float32([[x1,y1],[x2,y2],[x3,y3],[x4,y4]])
     x_min,x_max = min(x1,x2,x3,x4),max(x1,x2,x3,x4)
     y_min,y_max = max(y1,y2,y3,y4),min(y1,y2,y3,y4)
@@ -261,9 +277,10 @@ def warped_images(img):
 
     matrix = cv2.getPerspectiveTransform(test, dst_points)
     warped_image = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
-    print(img.shape[1], img.shape[0])
+    # print(img.shape[1], img.shape[0])
     for i in range(warped_image.shape[0]):
         for j in range(warped_image.shape[1]):
+            # print('shape ',warped_image[i][j].shape[0])
             if warped_image[i][j].shape[0]==3:
                 comparison_array = np.array([200, 200, 200])
                 if all(warped_image[i][j] <= comparison_array):
