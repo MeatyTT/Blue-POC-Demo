@@ -264,7 +264,7 @@ def warped_images(img):
     print(img.shape[1], img.shape[0])
     for i in range(warped_image.shape[0]):
         for j in range(warped_image.shape[1]):
-            if warped_image[i][j][0]==3:
+            if warped_image[i][j].shape[0]==3:
                 comparison_array = np.array([200, 200, 200])
                 if all(warped_image[i][j] <= comparison_array):
                     warped_image[i][j]=[255,255,255]
@@ -277,7 +277,7 @@ def warped_images(img):
                 else:
                     break
         for j in range(warped_image.shape[1]-1,-1,-1):
-            if warped_image[i][j][0]==3:
+            if warped_image[i][j].shape[0]==3:
                 comparison_array = np.array([200, 200, 200])
                 if all(warped_image[i][j] <= comparison_array):
                     warped_image[i][j]=[255,255,255]
