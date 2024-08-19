@@ -125,6 +125,7 @@ def find_parallels(lines, img, length):
     
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(find_parallels_helper, [(lines, img, length, i*chunk_size, (i+1)*chunk_size) for i in range(num_processes)])
+        pool.close() 
 
     # Kết hợp kết quả từ các tiến trình con
     all_parallel_lines_ox = []
@@ -185,6 +186,7 @@ def warped_images(img):
     with multiprocessing.Pool(processes=2) as pool:
         results1 = pool.starmap(shortened_line, [(parallel_lines_ox,  length_tmp )])
         results2 = pool.starmap(shortened_line, [(parallel_lines_oy,  length_tmp )])
+        pool.close() 
     parallel_lines_ox = []
     parallel_lines_oy = []
     for result_ox in results1:
