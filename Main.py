@@ -250,10 +250,10 @@ def warped_images(img):
     else:
         x3,y3 = sorted_values[0][0],sorted_values[0][1]
         x4,y4 = sorted_values[1][0],sorted_values[1][1]
-    cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
-    cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
-    cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
-    cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
+    # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
+    # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
+    # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
+    # cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
     test = np.float32([[x1,y1],[x2,y2],[x3,y3],[x4,y4]])
     x_min,x_max = min(x1,x2,x3,x4),max(x1,x2,x3,x4)
     y_min,y_max = max(y1,y2,y3,y4),min(y1,y2,y3,y4)
