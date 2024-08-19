@@ -162,8 +162,8 @@ def warped_images(img):
     length = 25
     # results = find_parallels(lines,img,length)
     parallel_lines_ox,parallel_lines_oy = find_parallels(line_tests,img,length)
-    # print('ox',len(parallel_lines_ox))
-    # print('oy',len(parallel_lines_oy))
+    print('ox',len(parallel_lines_ox))
+    print('oy',len(parallel_lines_oy))
     # return parallel_lines_ox,parallel_lines_oy
     while len(parallel_lines_ox) == 0 or len(parallel_lines_oy) == 0:
         length-=10
