@@ -143,7 +143,7 @@ def warped_images(img):
     lines= lsd.detect(gray)[0]
 
     img_height,img_width,_ = img.shape
-    length = 15
+    length = 25
     # results = find_parallels(lines,img,length)
     parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
     # print('ox',len(parallel_lines_ox))
