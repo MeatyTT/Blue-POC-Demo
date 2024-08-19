@@ -166,7 +166,7 @@ def warped_images(img):
     # print('oy',len(parallel_lines_oy))
     # return parallel_lines_ox,parallel_lines_oy
     length_tmp=length
-    while len(parallel_lines_ox) > 150:
+    while len(parallel_lines_ox) > 175:
         length_tmp+=5
         tmp=[]
         for line in parallel_lines_ox:
@@ -181,7 +181,7 @@ def warped_images(img):
         print('ox',len(parallel_lines_ox))
         print('oy',len(parallel_lines_oy))
     length_tmp=length
-    while len(parallel_lines_oy) > 150:
+    while len(parallel_lines_oy) > 175:
         length_tmp+=5
         tmp=[]
         for line in parallel_lines_oy:
