@@ -117,7 +117,7 @@ def find_parallels_helper(lines, img, length, start_index, end_index):
     print('oy',len(parallel_lines_oy))
     return parallel_lines_ox,parallel_lines_oy
 def find_parallels(lines, img, length):
-    num_processes = 5  # Sử dụng số lượng CPU
+    num_processes = 10  # Sử dụng số lượng CPU
     chunk_size = len(lines) // num_processes
     print('LLLLLLLLLEEEEEEEEEEEENNNNNNNN',len(lines))
 
