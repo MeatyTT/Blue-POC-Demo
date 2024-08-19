@@ -120,12 +120,11 @@ def find_parallels(lines, img, length):
     num_processes = 10  # Sử dụng số lượng CPU
     chunk_size = len(lines) // num_processes
     print('LLLLLLLLLEEEEEEEEEEEENNNNNNNN',len(lines))
-
+    
 #Code chạy đa luồng với 4 luồng ở đây ạ
     
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(find_parallels_helper, [(lines, img, length, i*chunk_size, (i+1)*chunk_size) for i in range(num_processes)])
-        pool.close() 
 
     # Kết hợp kết quả từ các tiến trình con
     all_parallel_lines_ox = []
@@ -135,22 +134,6 @@ def find_parallels(lines, img, length):
         all_parallel_lines_oy.extend(result_oy)
 
     return all_parallel_lines_ox, all_parallel_lines_oy
-def shortened_line(lines,length_tmp):
-    while len(lines) > 150:
-        length_tmp+=5
-        tmp=[]
-        for line in lines:
-                x1,y1,x2,y2 = line[0]
-                x3,y3,x4,y4 = line[1]
-                length1 = np.sqrt((x2 - x1)**2 + (y1 - y2)**2)
-                length2 = np.sqrt((x3 - x4)**2 + (y3 - y4)**2)
-                if length1 >= length_tmp and length2 >= length_tmp:
-                    tmp.append(line)
-        lines=None
-        lines=tmp
-        # print('ox',len(parallel_lines_ox))
-        # print('oy',len(parallel_lines_oy))  
-    return lines  
 def warped_images(img):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -183,20 +166,39 @@ def warped_images(img):
     # print('oy',len(parallel_lines_oy))
     # return parallel_lines_ox,parallel_lines_oy
     length_tmp=length
-    with multiprocessing.Pool(processes=2) as pool:
-        results1 = pool.starmap(shortened_line, [(parallel_lines_ox,  length_tmp )])
-        results2 = pool.starmap(shortened_line, [(parallel_lines_oy,  length_tmp )])
-        pool.close() 
-    parallel_lines_ox = []
-    parallel_lines_oy = []
-    for result_ox in results1:
-        parallel_lines_ox.extend(result_ox)
-    for result_oy in results2:
-        parallel_lines_oy.extend(result_oy)
-    print('11111111111111111111',len(parallel_lines_ox),len(parallel_lines_oy))
+    while len(parallel_lines_ox) > 150:
+        length_tmp+=5
+        tmp=[]
+        for line in parallel_lines_ox:
+                x1,y1,x2,y2 = line[0]
+                x3,y3,x4,y4 = line[1]
+                length1 = np.sqrt((x2 - x1)**2 + (y1 - y2)**2)
+                length2 = np.sqrt((x3 - x4)**2 + (y3 - y4)**2)
+                if length1 >= length_tmp and length2 >= length_tmp:
+                    tmp.append(line)
+        parallel_lines_ox=None
+        parallel_lines_ox=tmp
+        print('ox',len(parallel_lines_ox))
+        print('oy',len(parallel_lines_oy))
+    length_tmp=length
+    while len(parallel_lines_oy) > 150:
+        length_tmp+=5
+        tmp=[]
+        for line in parallel_lines_oy:
+                x1,y1,x2,y2 = line[0]
+                x3,y3,x4,y4 = line[1]
+                length1 = np.sqrt((x2 - x1)**2 + (y1 - y2)**2)
+                length2 = np.sqrt((x3 - x4)**2 + (y3 - y4)**2)
+                if length1 >= length_tmp and length2 >= length_tmp:
+                    tmp.append(line)
+        parallel_lines_oy=None
+        parallel_lines_oy=tmp
+        print('ox',len(parallel_lines_ox))
+        print('oy',len(parallel_lines_oy))
     while len(parallel_lines_ox) == 0 or len(parallel_lines_oy) == 0:
         length-=10
         parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
+
     max_area = 0
     max_parallelogram = None
     max_parallelogram_coordinate=None
