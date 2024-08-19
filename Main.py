@@ -261,17 +261,34 @@ def warped_images(img):
 
     matrix = cv2.getPerspectiveTransform(test, dst_points)
     warped_image = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
+    print(img.shape[1], img.shape[0])
     for i in range(warped_image.shape[0]):
         for j in range(warped_image.shape[1]):
-            if all(warped_image[i][j] <= [200 ,200 ,200]):
-                warped_image[i][j]=[255,255,255]
+            if warped_image[i][j][0]==3:
+                comparison_array = np.array([200, 200, 200])
+                if all(warped_image[i][j] <= comparison_array):
+                    warped_image[i][j]=[255,255,255]
+                else:
+                    break
             else:
-                break
+                comparison_array = np.array([200, 200, 200,200])
+                if all(warped_image[i][j] <= comparison_array):
+                    warped_image[i][j]=[255,255,255,255]
+                else:
+                    break
         for j in range(warped_image.shape[1]-1,-1,-1):
-            if all(warped_image[i][j] <= [200 ,200 ,200]):
-                warped_image[i][j]=[255,255,255]
+            if warped_image[i][j][0]==3:
+                comparison_array = np.array([200, 200, 200])
+                if all(warped_image[i][j] <= comparison_array):
+                    warped_image[i][j]=[255,255,255]
+                else:
+                    break
             else:
-                break
+                comparison_array = np.array([200, 200, 200,200])
+                if all(warped_image[i][j] <= comparison_array):
+                    warped_image[i][j]=[255,255,255,255]
+                else:
+                    break
     return img,warped_image
 
 
