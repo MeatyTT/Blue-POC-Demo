@@ -165,6 +165,9 @@ def warped_images(img):
     # print('ox',len(parallel_lines_ox))
     # print('oy',len(parallel_lines_oy))
     # return parallel_lines_ox,parallel_lines_oy
+    while len(parallel_lines_ox) == 0 or len(parallel_lines_oy) == 0:
+        length-=10
+        parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
     length_tmp=length
     while len(parallel_lines_ox) > 175:
         length_tmp+=5
@@ -195,9 +198,6 @@ def warped_images(img):
         parallel_lines_oy=tmp
         print('ox',len(parallel_lines_ox))
         print('oy',len(parallel_lines_oy))
-    while len(parallel_lines_ox) == 0 or len(parallel_lines_oy) == 0:
-        length-=10
-        parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
 
     max_area = 0
     max_parallelogram = None
