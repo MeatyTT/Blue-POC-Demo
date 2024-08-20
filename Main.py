@@ -6,22 +6,11 @@ import time
 import os
 import math
 import multiprocessing
+# from numba import njit,prange
+# from numba.np.extensions import cross2d
 # from image_enhancement.run import *
-# Thêm style trực tiếp
-# st.markdown("""
-# <style>
-# .stFileUploader {
-#     margin-bottom: 10px;
-#     height: 300px;
-# }
-# .caption {
-#     font-size: 24px;
-#     text-align: center;
-# }
-# </style>
-# """, unsafe_allow_html=True)
+# @njit(fastmath=True, cache=True)
 def is_parallel(line1, line2, tolerance=2):
-  # Tính vector hướng của mỗi đường thẳng
   dx1 = line1[2] - line1[0]
   dy1 = line1[3] - line1[1]
   dx2 = line2[2] - line2[0]
@@ -29,31 +18,31 @@ def is_parallel(line1, line2, tolerance=2):
   angle1=np.degrees(math.atan2(dy1, dx1))
   angle2=np.degrees(math.atan2(dy2, dx2))
   if abs(angle1-angle2)<8:
-  # Kiểm tra xem các vector hướng có tỉ lệ thức bằng nhau không (coi như song song)
     if abs(dx1 * dy2 - dx2 * dy1) < tolerance:
-      # Trường hợp đặc biệt: Kiểm tra xem các đường thẳng có cùng hoành độ vô cực hay không
       if dx1 == 0 and dx2 == 0:
-        return True  # Cả hai đường thẳng đều thẳng đứng
+        return True 
       else:
-        return True  # Các đường thẳng có cùng độ dốc
+        return True 
     elif abs(dx1 / dx2 - dy1 / dy2) < tolerance:
       return True
     else:
       return False
   else:
      return False
+# @njit(fastmath=True, cache=True)
 def calculate_parallelogram_area(A_point,B_point,C_point):
-    # Tạo hai vectơ kề nhau
+
     vector1 = np.array([A_point[0] - B_point[0], A_point[1] - B_point[1]])
     vector2 = np.array([C_point[0] - B_point[0], C_point[1] - B_point[1]])
-    # Tính tích có hướng
-    area = np.abs(np.cross(vector1, vector2))
+
+    area = np.abs(vector1[0] * vector2[1] - vector1[1] * vector2[0])
 
     return area
+# @njit(fastmath=True, cache=True)
 def intersection(line1, line2):
     x1,y1,x2,y2= line1
     x3,y3,x4,y4 = line2
-    # Tính các hệ số của phương trình đường thẳng
+
     A1 = y2 - y1
     B1 = x1 - x2
     C1 = A1*x1 + B1*y1
@@ -61,61 +50,40 @@ def intersection(line1, line2):
     B2 = x3 - x4
     C2 = A2*x3 + B2*y3
 
-    # Giải hệ phương trình
     determinant = A1*B2 - A2*B1
     if determinant == 0:
-        # Hai đường thẳng song song hoặc trùng nhau
         return None
     else:
         x = (B2*C1 - B1*C2)/determinant
         y = (A1*C2 - A2*C1)/determinant
         return x, y
-    
+# @njit(fastmath=True, cache=True)   
 def custom_sort(inner_list):
-  """Sorts a sublist by the second element (ascending) and prioritizes larger first elements in case of ties."""
-  return (inner_list[1], inner_list[0])  # Reverse first element for larger-first tie prioritization   
-def find_bounding_box(matrix):
-    rows, cols = np.where(matrix == 255)
-    x_min, x_max = np.min(cols), np.max(cols)
-    y_min, y_max = np.min(rows), np.max(rows)
-    return x_min, y_min, x_max, y_max
+  return (inner_list[1], inner_list[0])  
+# @njit(fastmath=True, cache=True, parallel=True)
 def find_parallels_helper(lines, img, length, start_index, end_index):
-    # time.sleep(1)
-    parallel_lines=[]
     parallel_lines_ox = []
-    angles_ox =[]
     parallel_lines_oy = []
-    angles_oy =[]
-    img_height,img_width,_ = img.shape
-    print('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq       ',start_index, end_index)
-    # index=[]
-    
-# Do vẫn cần xét tất cả line nên chỉ chia luồng thành 4 phần nhỏ, 4 phần nhỏ sẽ so với cả lines chứ không phải cả line so với cả line như code đầu
-    
-    for i in range(start_index, end_index):
-        for j in range(i+1,len(lines)):
-            if is_parallel(lines[i][0],lines[j][0]):
-                parallel_lines.append([lines[i][0],lines[j][0]])
-                x1,y1,x2,y2 = lines[i][0]
-                x3,y3,x4,y4 = lines[j][0]
+    img_height, img_width, _ = img.shape
+
+    for i in range(start_index, end_index):  # Use prange for parallelism
+        for j in range(i + 1, len(lines)):
+            if is_parallel(lines[i][0], lines[j][0]):
+                x1, y1, x2, y2 = lines[i][0]
+                x3, y3, x4, y4 = lines[j][0]
                 length1 = np.sqrt((x2 - x1)**2 + (y1 - y2)**2)
                 length2 = np.sqrt((x3 - x4)**2 + (y3 - y4)**2)
-                angle = np.degrees(math.atan2(y2-y1, x2-x1))
-                if 45<angle<135 or -135<angle<-45:
-                    dist = abs(min(x3,x4)-min(x1,x2))
-                    if dist >= img_width/4 and length1 >= length and length2 >= length:
-                        # index.append([i,j])
-                        parallel_lines_oy.append([lines[i][0],lines[j][0]])
-                        angles_oy.append(np.degrees(math.atan2(y2-y1, x2-x1)))
-                else :
-                    dist = abs(min(y3,y4)-min(y1,y2))
-                    if dist >= img_height/4 and length1 >= length and length2 >= length:
-                        parallel_lines_ox.append([lines[i][0],lines[j][0]])
-                        angles_ox.append(np.degrees(math.atan2(y2-y1, x2-x1)))
-    # print(index)
-    print('ox',len(parallel_lines_ox),start_index)
-    print('oy',len(parallel_lines_oy))
-    return parallel_lines_ox,parallel_lines_oy
+                angle = np.degrees(math.atan2(y2 - y1, x2 - x1))
+                if 45 < angle < 135 or -135 < angle < -45:
+                    dist = abs(min(x3, x4) - min(x1, x2))
+                    if dist >= img_width / 4 and length1 >= length and length2 >= length:
+                        parallel_lines_oy.append([lines[i][0], lines[j][0]])
+                else:
+                    dist = abs(min(y3, y4) - min(y1, y2))
+                    if dist >= img_height / 4 and length1 >= length and length2 >= length:
+                        parallel_lines_ox.append([lines[i][0], lines[j][0]])
+
+    return parallel_lines_ox, parallel_lines_oy
 def find_parallels(lines, img, length):
     num_processes = 10  # Sử dụng số lượng CPU
     chunk_size = len(lines) // num_processes
@@ -170,8 +138,9 @@ def warped_images(img):
         parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
     print('LENGTHHHHHHHHHHHHHHHH',length)
     length_tmp=length
+    # parallel_lines_ox=shorten_lines(parallel_lines_ox,length_tmp)
     while len(parallel_lines_ox) > 175:
-        length_tmp+=5
+        length_tmp+=10
         tmp=[]
         for line in parallel_lines_ox:
                 x1,y1,x2,y2 = line[0]
@@ -186,7 +155,7 @@ def warped_images(img):
         print('oy',len(parallel_lines_oy))
     length_tmp=length
     while len(parallel_lines_oy) > 175:
-        length_tmp+=5
+        length_tmp+=10
         tmp=[]
         for line in parallel_lines_oy:
                 x1,y1,x2,y2 = line[0]
