@@ -10,7 +10,7 @@ import multiprocessing
 # from numba.np.extensions import cross2d
 # from image_enhancement.run import *
 # @njit(fastmath=True, cache=True)
-def is_parallel(line1, line2, tolerance=2):
+def is_parallel(line1, line2, tolerance=3):
   dx1 = line1[2] - line1[0]
   dy1 = line1[3] - line1[1]
   dx2 = line2[2] - line2[0]
@@ -22,7 +22,7 @@ def is_parallel(line1, line2, tolerance=2):
       if dx1 == 0 and dx2 == 0:
         return True 
       else:
-        return True 
+        return False
     elif abs(dx1 / dx2 - dy1 / dy2) < tolerance:
       return True
     else:
@@ -122,7 +122,7 @@ def warped_images(img):
     # Tách phần x đã sắp xếp từ combined_sorted
     lines_sorted = [pair[1] for pair in combined_sorted]
     line_tests=[]
-    for i in range(int(len(lines_sorted)*0.2)):
+    for i in range(int(len(lines_sorted)*0.3)):
         line_tests.append(lines_sorted[i])
     # print(line_lengths)
     # print(lines_sorted)
@@ -139,7 +139,12 @@ def warped_images(img):
     print('LENGTHHHHHHHHHHHHHHHH',length)
     length_tmp=length
     # parallel_lines_ox=shorten_lines(parallel_lines_ox,length_tmp)
-    while len(parallel_lines_ox) > 175:
+    # for line in parallel_lines_ox:
+    #     x1,y1,x2,y2 = np.round(line[0]).astype(int)
+    #     x1,y1,x2,y2 =int(x1),int(y1),int(x2),int(y2) 
+
+    #     cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
+    while len(parallel_lines_ox) > 150:
         length_tmp+=10
         tmp=[]
         for line in parallel_lines_ox:
@@ -154,7 +159,7 @@ def warped_images(img):
         print('ox',len(parallel_lines_ox))
         print('oy',len(parallel_lines_oy))
     length_tmp=length
-    while len(parallel_lines_oy) > 175:
+    while len(parallel_lines_oy) > 150:
         length_tmp+=10
         tmp=[]
         for line in parallel_lines_oy:
@@ -174,11 +179,11 @@ def warped_images(img):
     max_parallelogram_coordinate=None
     
     image_line = img.copy()
-    for line in lines:
-        x1,y1,x2,y2 = np.round(line[0]).astype(int)
-        x1,y1,x2,y2 =int(x1),int(y1),int(x2),int(y2) 
+    # for line in parallel_lines_ox:
+    #     x1,y1,x2,y2 = np.round(line[0]).astype(int)
+    #     x1,y1,x2,y2 =int(x1),int(y1),int(x2),int(y2) 
 
-        cv2.line(image_line,(x1,y1),(x2,y2),(0,0,255),2)
+    #     cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
 
 
     count=0
@@ -280,6 +285,7 @@ def warped_images(img):
 
 
 # Tải dữ liệu
+
 uploaded_file = st.file_uploader("Chọn file dữ liệu")
 if uploaded_file is not None:
     img = np.array(Image.open(uploaded_file))
@@ -293,7 +299,7 @@ if uploaded_file is not None:
     end_time = time.time()
     st.image(image, caption='Source image')
     st.image(warped_image, caption='Warped image')
-    st.write("Thời gian chạy:", end_time - start_time, "giây")
+    st.markdown(f'<p style="display: inline;font-size:24px;">Thời gian chạy: <div style="display: inline;color:green;font-size:30px;"> {end_time - start_time}</div> giây</p>', unsafe_allow_html=True)
     # img = Image.open(uploaded_file)
     # np_array = np.array(img)
     # img = cv2.imread(img)
