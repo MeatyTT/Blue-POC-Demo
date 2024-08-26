@@ -265,6 +265,8 @@ def warped_images(img):
 
 
     # # print(max_parallelogram_coordinate)
+    if max_parallelogram_coordinate is None:
+        return None,None
     x1,y1 = round(max_parallelogram_coordinate[0][0]),round(max_parallelogram_coordinate[0][1])
     x2,y2 = round(max_parallelogram_coordinate[1][0]),round(max_parallelogram_coordinate[1][1])
     x3,y3 = round(max_parallelogram_coordinate[2][0]),round(max_parallelogram_coordinate[2][1])
@@ -315,17 +317,17 @@ def warped_images(img):
         x3,y3 = combined_sorted[2]
     dist_width = np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2)
     dist_height = np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2)
-    # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
-    # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
-    # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
-    # cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
-    # cv2.putText(img, 'A', (round(x1),round(y1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
+    cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
+    cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
+    cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
+    cv2.putText(img, 'A', (round(x1),round(y1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'B', (round(x2),round(y2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'B', (round(x2),round(y2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'C', (round(x3),round(y3)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'C', (round(x3),round(y3)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'D', (round(x4),round(y4)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'D', (round(x4),round(y4)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
     test = np.float32([[x1,y1],[x2,y2],[x3,y3],[x4,y4]])
     x_min,x_max = min(x1,x2,x3,x4),max(x1,x2,x3,x4)
     y_min,y_max = max(y1,y2,y3,y4),min(y1,y2,y3,y4)
