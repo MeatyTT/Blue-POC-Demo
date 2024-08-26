@@ -292,8 +292,6 @@ def warped_images(img):
     else:
         x3,y3 = sorted_values[0][0],sorted_values[0][1]
         x4,y4 = sorted_values[1][0],sorted_values[1][1]
-    dist_width = np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2)
-    dist_height = np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2)
     # if dist_width < dist_height:
     #     x_tmp,y_tmp = x4,y4
     #     x4,y4 = x3,y3
@@ -301,6 +299,22 @@ def warped_images(img):
     #     x2,y2 = x1,y1
     #     x1,y1 = x_tmp,y_tmp
     #     dist_height,dist_width = dist_width,dist_height
+    x_list=[x1,x2,x3,x4]
+    y_list=[y1,y2,y3,y4]
+    combined = list(zip(x_list, y_list))
+
+    # Sort the combined list based on the values in a (the first element of each tuple)
+    combined_sorted = sorted(combined, key=lambda x: x[0])
+
+    # Extract the two smallest x values and their corresponding y values
+    if combined_sorted[0][1]<combined_sorted[1][1]:
+        x1,y1 = combined_sorted[1]
+        x4,y4 = combined_sorted[0]
+    if combined_sorted[2][1]<combined_sorted[3][1]:
+        x2,y2 = combined_sorted[3]
+        x3,y3 = combined_sorted[2]
+    dist_width = np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2)
+    dist_height = np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2)
     # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
     # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
     # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
