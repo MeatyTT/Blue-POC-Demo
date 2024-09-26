@@ -7,6 +7,7 @@ import os
 import math
 import multiprocessing
 import concurrent.futures
+from multiprocessing import Pool
 # from numba import njit,prange
 # from numba.np.extensions import cross2d
 # from image_enhancement.run import *
@@ -144,6 +145,50 @@ def update_parallel_lines(parallel_lines, initial_length):
                 results.extend(future.result())
         parallel_lines = results
     return parallel_lines
+def process_parallel_lines(pair):
+    i, j, parallel_lines_ox, parallel_lines_oy, img_width, img_height, max_area = pair
+    max_parallelogram, max_parallelogram_coordinate = None, None
+
+    # Get intersection points
+    A_point = intersection(parallel_lines_ox[i][0], parallel_lines_oy[j][0])
+    B_point = intersection(parallel_lines_oy[j][0], parallel_lines_ox[i][1])
+    C_point = intersection(parallel_lines_ox[i][1], parallel_lines_oy[j][1])
+    D_point = intersection(parallel_lines_oy[j][1], parallel_lines_ox[i][0])
+
+    if A_point and B_point and C_point and D_point:
+        points_width = np.array([A_point[0], B_point[0], C_point[0], D_point[0]])
+        points_height = np.array([A_point[1], B_point[1], C_point[1], D_point[1]])
+
+        # Check if points are within image bounds
+        if np.all((10 <= points_width) & (points_width <= img_width - 10)) and \
+           np.all((10 <= points_height) & (points_height <= img_height - 10)):
+            area = calculate_parallelogram_area(A_point, B_point, C_point)
+            if area > max_area:
+                max_area = area
+                max_parallelogram = [parallel_lines_ox[i][0], parallel_lines_ox[i][1], parallel_lines_oy[j][0], parallel_lines_oy[j][1]]
+                max_parallelogram_coordinate = [A_point, B_point, C_point, D_point]
+                
+    return max_area, max_parallelogram, max_parallelogram_coordinate
+
+
+def find_max_parallelogram(parallel_lines_ox, parallel_lines_oy, img_width, img_height):
+    max_area = 0
+    max_parallelogram = None
+    max_parallelogram_coordinate = None
+
+    # Use parallel processing for performance improvement
+    with Pool() as pool:
+        results = pool.map(process_parallel_lines, [(i, j, parallel_lines_ox, parallel_lines_oy, img_width, img_height, max_area)
+                            for i in range(len(parallel_lines_ox)) for j in range(len(parallel_lines_oy))])
+
+    for result in results:
+        area, parallelogram, coordinates = result
+        if area > max_area:
+            max_area = area
+            max_parallelogram = parallelogram
+            max_parallelogram_coordinate = coordinates
+
+    return max_area, max_parallelogram, max_parallelogram_coordinate
 def warped_images(img):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -163,14 +208,18 @@ def warped_images(img):
 
     # Tách phần x đã sắp xếp từ combined_sorted
     lines_sorted = [pair[1] for pair in combined_sorted]
+    lengths_sorted = [pair[0] for pair in combined_sorted]
     line_tests=[]
-    for i in range(int(len(lines_sorted)*0.3)):
+    min_lines =  100
+    for i in range(min(int(len(lines_sorted)*0.3),min_lines)):
         line_tests.append(lines_sorted[i])
     # # print(line_lengths)
-    # # print(lines_sorted)
     img_height,img_width,_ = img.shape
-    length = 25
+    lengths_sorted = lengths_sorted[:min(int(len(lines_sorted)*0.3),min_lines)]
+    length = round(max(min(lengths_sorted),25))
+    # print((lengths_sorted))
     # results = find_parallels(lines,img,length)
+    print('LENGTHHHHHHHHHHHHHHHH',length)
     parallel_lines_ox,parallel_lines_oy = find_parallels(line_tests,img,length)
     print('ox',len(parallel_lines_ox))
     print('oy',len(parallel_lines_oy))
@@ -178,7 +227,6 @@ def warped_images(img):
     if len(parallel_lines_ox) == 0 or len(parallel_lines_oy) == 0:
         length=0
         parallel_lines_ox,parallel_lines_oy = find_parallels(lines,img,length)
-    print('LENGTHHHHHHHHHHHHHHHH',length)
     # parallel_lines_ox=shorten_lines(parallel_lines_ox,length_tmp)
     # for line in parallel_lines_ox:
     #     x1,y1,x2,y2 = np.round(line[0]).astype(int)
@@ -213,13 +261,13 @@ def warped_images(img):
     #                 tmp.append(line)
     #     parallel_lines_oy=None
     #     parallel_lines_oy=tmp
-        # print('ox',len(parallel_lines_ox))
-        # print('oy',len(parallel_lines_oy))
-    start_time = time.time()
+    # start_time = time.time()
     parallel_lines_ox = update_parallel_lines(parallel_lines_ox, length_tmp)
     parallel_lines_oy = update_parallel_lines(parallel_lines_oy, length_tmp)
-    end_time = time.time()
-    print(end_time-start_time,'s')
+    print('ox',len(parallel_lines_ox))
+    print('oy',len(parallel_lines_oy))
+    # end_time = time.time()
+    # print(end_time-start_time,'s')
     max_area = 0
     max_parallelogram_coordinate=None
     
@@ -229,13 +277,11 @@ def warped_images(img):
     #     x1,y1,x2,y2 =int(x1),int(y1),int(x2),int(y2) 
 
     #     cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
+    # max_area, max_parallelogram, max_parallelogram_coordinate = find_max_parallelogram(parallel_lines_ox, parallel_lines_oy, img_width, img_height)
 
-
-    count=0
     for i in range(len(parallel_lines_ox)):
 
         for j in range(len(parallel_lines_oy)):
-                count+=1
             # if not is_parallel(parallel_lines[i][0],parallel_lines[j][0]):
                 # # print('i',i,'j',j)
                 A_point = intersection(parallel_lines_ox[i][0],parallel_lines_oy[j][0])
@@ -266,7 +312,7 @@ def warped_images(img):
 
     # # print(max_parallelogram_coordinate)
     if max_parallelogram_coordinate is None:
-        return None,None
+        return img,img
     x1,y1 = round(max_parallelogram_coordinate[0][0]),round(max_parallelogram_coordinate[0][1])
     x2,y2 = round(max_parallelogram_coordinate[1][0]),round(max_parallelogram_coordinate[1][1])
     x3,y3 = round(max_parallelogram_coordinate[2][0]),round(max_parallelogram_coordinate[2][1])
@@ -315,76 +361,87 @@ def warped_images(img):
     if combined_sorted[2][1]<combined_sorted[3][1]:
         x2,y2 = combined_sorted[3]
         x3,y3 = combined_sorted[2]
-    dist_width = np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2)
-    dist_height = np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2)
+    dist_width = min(np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2),np.sqrt((x3 - x4 )**2 + (y3  - y4 )**2))
+    dist_height =min(np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2),np.sqrt((x3 - x2 )**2 + (y3  - y2 )**2))
     # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
     # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
     # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
     # cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
-    # cv2.putText(img, 'A', (round(x1),round(y1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'A', (round(x1),round(y1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'B', (round(x2),round(y2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'B', (round(x2),round(y2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'C', (round(x3),round(y3)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'C', (round(x3),round(y3)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
-    # cv2.putText(img, 'D', (round(x4),round(y4)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    cv2.putText(img, 'D', (round(x4),round(y4)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+    # large_image = np.ones((img.shape[0]+500, img.shape[1]+500, 3), dtype=np.uint8)*255
+    # # Xác định vị trí đặt ảnh nhỏ trong ảnh lớn (ví dụ góc trên trái)
+    # x_offset, y_offset = 250, 250  # Bạn có thể thay đổi toạ độ này
+
+    # # Chèn ảnh nhỏ vào ảnh lớn tại vị trí chỉ định
+    # large_image[y_offset:y_offset + img.shape[0], x_offset:x_offset + img.shape[1]] = img
+    
     test = np.float32([[x1,y1],[x2,y2],[x3,y3],[x4,y4]])
     x_min,x_max = min(x1,x2,x3,x4),max(x1,x2,x3,x4)
     y_min,y_max = max(y1,y2,y3,y4),min(y1,y2,y3,y4)
     # print(x1,y1)
     # dst_points = np.float32([[x_min,y_min],[x_max,y_min],[x_max,y_max],[x_min,y_max]])
-    dst_points = np.float32([[x_min,y_min],[x_min+dist_width,y_min],[x_min+dist_width,y_min-dist_height],[x_min,y_min-dist_height]])
-
+    x_min,y_min=x1,y1
+    dst_points = np.float32([[x_min,y_min-5],[x_min+dist_width,y_min-5],[x_min+dist_width,y_min-dist_height-5],[x_min,y_min-dist_height-5]])
+    
     matrix = cv2.getPerspectiveTransform(test, dst_points)
     warped_image = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
-    # # print(img.shape[1], img.shape[0])
-    for i in range(warped_image.shape[0]):
-        for j in range(warped_image.shape[1]):
-            # # print('shape ',warped_image[i][j].shape[0])
-            if warped_image[i][j].shape[0]==3:
-                comparison_array = np.array([200, 200, 200])
-                if all(warped_image[i][j] <= comparison_array):
-                    warped_image[i][j]=[255,255,255]
-                else:
-                    break
-            else:
-                comparison_array = np.array([200, 200, 200,200])
-                if all(warped_image[i][j] <= comparison_array):
-                    warped_image[i][j]=[255,255,255,255]
-                else:
-                    break
-        for j in range(warped_image.shape[1]-1,-1,-1):
-            if warped_image[i][j].shape[0]==3:
-                comparison_array = np.array([200, 200, 200])
-                if all(warped_image[i][j] <= comparison_array):
-                    warped_image[i][j]=[255,255,255]
-                else:
-                    break
-            else:
-                comparison_array = np.array([200, 200, 200,200])
-                if all(warped_image[i][j] <= comparison_array):
-                    warped_image[i][j]=[255,255,255,255]
-                else:
-                    break
+    # print(img.shape[1], img.shape[0])
+    # for i in range(warped_image.shape[0]):
+    #     for j in range(warped_image.shape[1]):
+    #         # # print('shape ',warped_image[i][j].shape[0])
+    #         if warped_image[i][j].shape[0]==3:
+    #             comparison_array = np.array([0, 0, 0])
+    #             if all(warped_image[i][j] <= comparison_array):
+    #                 warped_image[i][j]=[255,255,255]
+    #             else:
+    #                 break
+    #         else:
+    #             comparison_array = np.array([0, 0, 0,0])
+    #             if all(warped_image[i][j] <= comparison_array):
+    #                 warped_image[i][j]=[255,255,255,255]
+    #             else:
+    #                 break
+    #     for j in range(warped_image.shape[1]-1,-1,-1):
+    #         if warped_image[i][j].shape[0]==3:
+    #             comparison_array = np.array([0, 0, 0])
+    #             if all(warped_image[i][j] <= comparison_array):
+    #                 warped_image[i][j]=[255,255,255]
+    #             else:
+    #                 break
+    #         else:
+    #             comparison_array = np.array([0, 0, 0,0])
+    #             if all(warped_image[i][j] <= comparison_array):
+    #                 warped_image[i][j]=[255,255,255,255]
+    #             else:
+    #                 break
     return img,warped_image
 
 
 # Tải dữ liệu
 
+# uploaded_files = st.file_uploader("Chọn file dữ liệu",accept_multiple_files=True)
+# if uploaded_files is not None:
+#     for uploaded_file in uploaded_files:
 uploaded_file = st.file_uploader("Chọn file dữ liệu")
 if uploaded_file is not None:
-    img = np.array(Image.open(uploaded_file))
-    # st.image(img, caption='Source image')
-    time.sleep(2)
-    # x1,x2 = warped_images(img)
-    # # print(len(x1))
-    # # print(len(x2))
-    start_time = time.time()
-    image,warped_image = warped_images(img)
-    end_time = time.time()
-    st.image(image, caption='Source image')
-    st.image(warped_image, caption='Warped image')
-    st.markdown(f'<p style="display: inline;font-size:24px;">Thời gian chạy: <div style="display: inline;color:green;font-size:30px;"> {end_time - start_time}</div> giây</p>', unsafe_allow_html=True)
+        img = np.array(Image.open(uploaded_file))
+        # st.image(img, caption='Source image')
+        time.sleep(2)
+    #     # x1,x2 = warped_images(img)
+    #     # # print(len(x1))
+    #     # # print(len(x2))
+        start_time = time.time()
+        image,warped_image = warped_images(img)
+        end_time = time.time()
+        st.image(image, caption='Source image')
+        st.image(warped_image, caption='Warped image')
+        st.markdown(f'<p style="display: inline;font-size:24px;">Thời gian chạy: <div style="display: inline;color:green;font-size:30px;"> {end_time - start_time}</div> giây</p>', unsafe_allow_html=True)
     # img = Image.open(uploaded_file)
     # np_array = np.array(img)
     # img = cv2.imread(img)
@@ -403,3 +460,29 @@ if uploaded_file is not None:
     # st.write(pil_image)
     # # print(np_array)
     # st.write(uploaded_file)
+# if __name__ == "__main__":
+#     # Load image using cv2.imread
+#     error_file=[]
+#     for filename in os.listdir('Sample_set/'):
+#         print(filename)
+#         img = cv2.imread('Sample_set/'+filename)
+#         image_path_save = 'Sample_set_warp/result/'+filename
+#         directory_checks = os.path.dirname(image_path_save)
+#         if not os.path.exists(directory_checks):
+#             os.makedirs(directory_checks)
+#         image_path_save_check = 'Sample_set_warp/check/'+filename
+#         directory_checks = os.path.dirname(image_path_save_check)
+#         if not os.path.exists(directory_checks):
+#             os.makedirs(directory_checks)
+        
+#         start_time = time.time()
+#         img ,warped_image = warped_images(img)
+#         end_time = time.time()
+#         print(end_time-start_time,'s')
+#         # break
+#         if img is not None and warped_image is not None:
+#             cv2.imwrite(image_path_save,warped_image)
+#             cv2.imwrite(image_path_save_check,img)
+#         else:
+#             error_file.append(filename)
+#     print(error_file)
