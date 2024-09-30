@@ -12,25 +12,33 @@ from multiprocessing import Pool
 # from numba.np.extensions import cross2d
 # from image_enhancement.run import *
 # @njit(fastmath=True, cache=True)
-def is_parallel(line1, line2, tolerance=3):
-  dx1 = line1[2] - line1[0]
-  dy1 = line1[3] - line1[1]
-  dx2 = line2[2] - line2[0]
-  dy2 = line2[3] - line2[1]
-  angle1=np.degrees(math.atan2(dy1, dx1))
-  angle2=np.degrees(math.atan2(dy2, dx2))
-  if abs(angle1-angle2)<8:
-    if abs(dx1 * dy2 - dx2 * dy1) < tolerance:
-      if dx1 == 0 and dx2 == 0:
-        return True 
-      else:
-        return False
-    elif dx2!=0 and dy2!=0 and abs(dx1 / dx2 - dy1 / dy2) < tolerance:
-      return True
+def is_parallel(line1, line2):
+    x1,y1,x2,y2 = line1
+    x3,y3,x4,y4 = line2
+#   dx1 = line1[2] - line1[0]
+#   dy1 = line1[3] - line1[1]
+#   dx2 = line2[2] - line2[0]
+#   dy2 = line2[3] - line2[1]
+#   angle1=np.degrees(math.atan2(dy1, dx1))
+#   angle2=np.degrees(math.atan2(dy2, dx2))
+#   if abs(angle1-angle2)<8:
+#     if abs(dx1 * dy2 - dx2 * dy1) < tolerance:
+#       if dx1 == 0 and dx2 == 0:
+#         return True 
+#       else:
+#         return False
+#     elif dx2!=0 and dy2!=0 and abs(dx1 / dx2 - dy1 / dy2) < tolerance:
+#       return True
+#     else:
+#       return False
+#   else:
+#      return False
+    angle1 = np.arctan2(y2 - y1, x2 - x1) * (180 / np.pi) 
+    angle2 = np.arctan2(y4 - y3, x4 - x3) * (180 / np.pi) 
+    if abs(angle2 - angle1) <= 45:
+        return True
     else:
-      return False
-  else:
-     return False
+        return False
 # @njit(fastmath=True, cache=True)
 def calculate_parallelogram_area(A_point,B_point,C_point):
 
@@ -189,6 +197,9 @@ def find_max_parallelogram(parallel_lines_ox, parallel_lines_oy, img_width, img_
             max_parallelogram_coordinate = coordinates
 
     return max_area, max_parallelogram, max_parallelogram_coordinate
+def draw_img(points, img):
+    x1,y1,x2,y2 = points
+    cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
 def warped_images(img):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -313,6 +324,23 @@ def warped_images(img):
     # # print(max_parallelogram_coordinate)
     if max_parallelogram_coordinate is None:
         return img,img
+    draw_img(max_parallelogram[0],img)
+    draw_img(max_parallelogram[1],img)
+    draw_img(max_parallelogram[2],img)
+    draw_img(max_parallelogram[3],img)
+    # dx1,dy1=max_parallelogram[0]
+    # angle1=np.degrees(math.atan2(dy1, dx1))
+    # print(angle1)
+    # dx1,dy1=max_parallelogram[1]
+    # angle1=np.degrees(math.atan2(dy1, dx1))
+    # print(angle1)
+    # dx1,dy1=max_parallelogram[2]
+    # angle1=np.degrees(math.atan2(dy1, dx1))
+    # print(angle1)
+    # dx1,dy1=max_parallelogram[3]
+    # angle1=np.degrees(math.atan2(dy1, dx1))
+    # print(angle1)
+    
     x1,y1 = round(max_parallelogram_coordinate[0][0]),round(max_parallelogram_coordinate[0][1])
     x2,y2 = round(max_parallelogram_coordinate[1][0]),round(max_parallelogram_coordinate[1][1])
     x3,y3 = round(max_parallelogram_coordinate[2][0]),round(max_parallelogram_coordinate[2][1])
@@ -363,10 +391,10 @@ def warped_images(img):
         x3,y3 = combined_sorted[2]
     dist_width = min(np.sqrt((x1 - x2 )**2 + (y1  - y2 )**2),np.sqrt((x3 - x4 )**2 + (y3  - y4 )**2))
     dist_height =min(np.sqrt((x1  - x4 )**2 + (y1 - y4 )**2),np.sqrt((x3 - x2 )**2 + (y3  - y2 )**2))
-    # cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
-    # cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
-    # cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
-    # cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
+    cv2.line(img,(round(x1),round(y1)),(round(x2),round(y2)),(255,0,0),2)
+    cv2.line(img,(round(x2),round(y2)),(round(x3),round(y3)),(255,0,255),2)
+    cv2.line(img,(round(x3),round(y3)),(round(x4),round(y4)),(0,255,0),2)
+    cv2.line(img,(round(x1),round(y1)),(round(x4),round(y4)),(0,0,255),2)
     cv2.putText(img, 'A', (round(x1),round(y1)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 
     cv2.putText(img, 'B', (round(x2),round(y2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
@@ -386,7 +414,7 @@ def warped_images(img):
     y_min,y_max = max(y1,y2,y3,y4),min(y1,y2,y3,y4)
     # print(x1,y1)
     # dst_points = np.float32([[x_min,y_min],[x_max,y_min],[x_max,y_max],[x_min,y_max]])
-    x_min,y_min=x1,y1
+    # x_min,y_min=x1,y1
     dst_points = np.float32([[x_min,y_min-5],[x_min+dist_width,y_min-5],[x_min+dist_width,y_min-dist_height-5],[x_min,y_min-dist_height-5]])
     
     matrix = cv2.getPerspectiveTransform(test, dst_points)
